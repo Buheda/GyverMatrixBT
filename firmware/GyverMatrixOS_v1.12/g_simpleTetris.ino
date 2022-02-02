@@ -1,5 +1,5 @@
 //игра  тетрис!
-#if (USE_TETRIS == 1)
+#if (USE_SIMPLE_TETRIS == 1)
 // **************** НАСТРОЙКИ ТЕТРИС ****************
 #define FAST_SPEED 20     // скорость падения при удержании "вниз" (меньше - быстрее)
 #define STEER_SPEED 40    // скорость перемещения в бок при удержании кнопки (меньше - быстрее) на BT версии не работает!
@@ -7,88 +7,25 @@
 // --------------------- ДЛЯ РАЗРАБОТЧИКОВ ----------------------
 #include "include.h"
 
-// самая важная часть программы! Координаты пикселей фигур
-//  0 - палка
-//  1 - кубик
-//  2 - Г
-//  3 - Г обратная
-//  4 - Z
-//  5 - Z обратная
-//  6 - Т
-
-const int8_t figures[7][12][2] PROGMEM = {
-  {
-    { -1, 0}, {1, 0}, {2, 0},
-    {0, 1}, {0, 2}, {0, 3},
-    { -1, 0}, {1, 0}, {2, 0},
-    {0, 1}, {0, 2}, {0, 3},
-  },
-  {
-    {0, 1}, {1, 0}, {1, 1},
-    {0, 1}, {1, 0}, {1, 1},
-    {0, 1}, {1, 0}, {1, 1},
-    {0, 1}, {1, 0}, {1, 1},
-  },
-  {
-    { -1, 0}, { -1, 1}, {1, 0},
-    {0, 1}, {0, 2}, {1, 2},
-    { -2, 1}, { -1, 1}, {0, 1},
-    { -1, 0}, {0, 1}, {0, 2},
-  },
-  {
-    { -1, 0}, {1, 0}, {1, 1},
-    {0, 1}, {0, 2}, {1, 0},
-    {0, 1}, {1, 1}, {2, 1},
-    {0, 1}, {0, 2}, { -1, 2},
-  },
-  {
-    { -1, 0}, {0, 1}, {1, 1},
-    {0, 1}, { -1, 1}, { -1, 2},
-    { -1, 0}, {0, 1}, {1, 1},
-    {0, 1}, { -1, 1}, { -1, 2},
-  },
-  {
-    { -1, 1}, {0, 1}, {1, 0},
-    {0, 1}, {1, 1}, {1, 2},
-    { -1, 1}, {0, 1}, {1, 0},
-    {0, 1}, {1, 1}, {1, 2},
-  },
-  {
-    { -1, 0}, {0, 1}, {1, 0},
-    {0, 1}, {0, 2}, {1, 1},
-    { -1, 1}, {0, 1}, {1, 1},
-    { -1, 1}, {0, 1}, {0, 2},
-  }
-};
-
-void tetrisRoutine() {
+void st_tetrisRoutine() {
   if (loadingFlag) {
     FastLED.clear();
     loadingFlag = false;
-    newGameTetris();
+    st_newGameTetris();
     gamemodeFlag = true;
     modeCode = 2;
   }
 
-  if (checkButtons()) {
+  if (checkButtons(isLockedMode())) {
 
     if (buttons == 3) {   // кнопка нажата
       buttons = 4;
-      stepLeft();
+      st_stepLeft();
     }
 
     if (buttons == 1) {
       buttons = 4;
-      stepRight();
-    }
-
-    if (buttons == 0) {
-      buttons = 4;
-      if (checkArea(3)) {       // проверка возможности поворота
-        prev_ang = ang;         // запоминаем старый угол
-        ang = ++ang % 4;        // изменяем ang от 0 до 3 (да, хитро)
-        redrawFigure(prev_ang, pos, height);    // перерисовать фигуру
-      }
+      st_stepRight();
     }
 
     if (buttons == 2) {             // кнопка вниз удерживается
@@ -99,38 +36,38 @@ void tetrisRoutine() {
 
   /*
     if (bt_left.isStep()) {    // кнопка нажата и удерживается
-    stepLeft();
+    st_stepLeft();
     }
     if (bt_right.isStep()) {
-    stepRight();
+    st_stepRight();
     }
   */
 
   if (gameTimer.isReady()) {        // главный таймер игры
     prev_height = height;
 
-    if (!checkArea(0)) {            // проверяем столкновение с другими фигурами
+    if (!st_checkArea(0)) {            // проверяем столкновение с другими фигурами
       if (height >= HEIGHT - 2) {   // проиграл по высоте
-        gameOverTetris();                 // игра окончена, очистить всё
-        newGameTetris();                 // новый раунд
+        st_gameOverTetris();                 // игра окончена, очистить всё
+        st_newGameTetris();                 // новый раунд
       } else {                      // если не достигли верха
-        fixFigure();                // зафиксировать
-        checkAndClear();            // проверить ряды и очистить если надо
-        newGameTetris();                 // новый раунд
+        st_fixFigure();                // зафиксировать
+        st_checkAndClear();            // проверить ряды и очистить если надо
+        st_newGameTetris();                 // новый раунд
       }
     } else if (height == 0) {       // если достигли дна
-      fixFigure();                  // зафиксировать
-      checkAndClear();              // проверить ряды и очистить если надо
-      newGameTetris();                   // новый раунд
+      st_fixFigure();                  // зафиксировать
+      st_checkAndClear();              // проверить ряды и очистить если надо
+      st_newGameTetris();                   // новый раунд
     } else {                        // если путь свободен
       height--;                             // идём вниз
-      redrawFigure(ang, pos, prev_height);  // перерисовка
+      st_redrawFigure(pos, prev_height);  // перерисовка
     }
   }
 }
 
 // поиск и очистка заполненных уровней
-void checkAndClear() {
+void st_checkAndClear() {
   linesToClear = 1;                 // счётчик заполненных строк по вертикали. Искусственно принимаем 1 для работы цикла
   boolean full_flag = true;         // флаг заполненности
   while (linesToClear != 0) {       // чисти чисти пока не будет чисто!
@@ -194,13 +131,13 @@ void checkAndClear() {
 
 
 // функция фиксации фигуры
-void fixFigure() {
+void st_fixFigure() {
   color += ADD_COLOR;                   // чутка перекрасить
-  redrawFigure(ang, pos, prev_height);  // перерисовать
+  st_redrawFigure(pos, prev_height);  // перерисовать
 }
 
 // проигрыш
-void gameOverTetris() {
+void st_gameOverTetris() {
   FastLED.clear();
   FastLED.show();
 
@@ -214,14 +151,12 @@ void gameOverTetris() {
 }
 
 // новый раунд
-void newGameTetris() {
+void st_newGameTetris() {
   Serial.println("lolkek");   // без этого работает некорректно! магия ебаная
   delay(10);
   buttons = 4;
   height = HEIGHT;    // высота = высоте матрицы
   pos = WIDTH / 2;    // фигура появляется в середине
-  fig = random(7);    // выбираем слулчайно фигуру
-  ang = random(4);    // и угол поворота
   //color = colors[random(6)];      // случайный цвет
 
   color_index = ++color_index % 6;  // все цвета по очереди
@@ -237,23 +172,23 @@ void newGameTetris() {
 }
 
 // управление фигурами вправо и влево
-void stepRight() {
-  if (checkArea(1)) {
+void st_stepRight() {
+  if (st_checkArea(1)) {
     prev_pos = pos;
     if (++pos > WIDTH) pos = WIDTH;
-    redrawFigure(ang, prev_pos, height);
+    st_redrawFigure(prev_pos, height);
   }
 }
-void stepLeft() {
-  if (checkArea(2)) {
+void st_stepLeft() {
+  if (st_checkArea(2)) {
     prev_pos = pos;
     if (--pos < 0) pos = 0;
-    redrawFigure(ang, prev_pos, height);
+    st_redrawFigure(prev_pos, height);
   }
 }
 
 // проверка на столкновения
-boolean checkArea(int8_t check_type) {
+boolean st_checkArea(int8_t check_type) {
   // check type:
   // 0 - проверка лежащих фигур и пола
   // 1 - проверка стенки справа и фигур
@@ -261,64 +196,42 @@ boolean checkArea(int8_t check_type) {
   // 3 - проверка обеих стенок и пола
 
   boolean flag = true;
-  int8_t X, Y;
+  int8_t X = pos, Y = height;
+      
   boolean offset = 1;
-  int8_t this_ang = ang;
 
   // этот режим для проверки поворота. Поэтому "поворачиваем"
   // фигуру на следующий угол чтобы посмотреть, не столкнётся ли она с чем
   if (check_type == 3) {
-    this_ang = ++this_ang % 4;
     offset = 0;   // разрешаем оказаться вплотную к стенке
   }
-
-  for (byte i = 0; i < 4; i++) {
-    // проверяем точки фигуры
-    // pos, height - координаты главной точки фигуры в ГЛОБАЛЬНОЙ системе координат
-    // X, Y - координаты остальных трёх точек в ГЛОБАЛЬНОЙ системе координат
-    if (i == 0) {   // стартовая точка фигуры (начало отсчёта)
-      X = pos;
-      Y = height;
-    } else {        // остальные три точки
-      // получаем глобальные координаты точек, прибавив их положение в
-      // системе координат главной точки к координатам самой главной
-      // точки в глобальной системе координат. Если ты до сюда дочитал,
-      // то стукни мне на почту alex@alexgyver.ru . Печенек не дам, но ты молодец!
-      X = pos + (int8_t)pgm_read_byte(&figures[fig][this_ang * 3 + i - 1][0]);
-      Y = height + (int8_t)pgm_read_byte(&figures[fig][this_ang * 3 + i - 1][1]);
-
-      // дичь дикая! Но на самом деле просто восстанавливаем из прогмема данные
-      // и берём нужное число в массиве. Откуда все эти * 3 -1 ... можно додуматься
+  // границы поля
+  if (check_type == 1 || check_type == 3) {
+    if (X + 1 > WIDTH - 1) flag = false;    // смотрим следующий справа
+    uint32_t getColor;
+    if (Y < HEIGHT)
+      getColor = getPixColorXY(X + offset, Y);
+    if (getColor != 0x000000) {
+      flag = false;         // если не СВОЙ цвет и не чёрный
     }
+  }
 
-    // границы поля
-    if (check_type == 1 || check_type == 3) {
-      if (X + 1 > WIDTH - 1) flag = false;    // смотрим следующий справа
-      uint32_t getColor;
-      if (Y < HEIGHT)
-        getColor = getPixColorXY(X + offset, Y);
+  if (check_type == 2 || check_type == 3) {
+    if (X - 1 < 0) flag = false;    // смотрим следующий слева
+    uint32_t getColor;
+    if (Y < HEIGHT)
+      getColor = getPixColorXY(X - offset, Y);
+    if (getColor != 0x000000) {
+      flag = false;         // если не СВОЙ цвет и не чёрный
+    }
+  }
+
+  if (check_type == 0 || check_type == 3) {
+    uint32_t getColor;
+    if (Y < HEIGHT) {
+      getColor = getPixColorXY(X, Y - 1);
       if (getColor != color && getColor != 0x000000) {
         flag = false;         // если не СВОЙ цвет и не чёрный
-      }
-    }
-
-    if (check_type == 2 || check_type == 3) {
-      if (X - 1 < 0) flag = false;    // смотрим следующий слева
-      uint32_t getColor;
-      if (Y < HEIGHT)
-        getColor = getPixColorXY(X - offset, Y);
-      if (getColor != color && getColor != 0x000000) {
-        flag = false;         // если не СВОЙ цвет и не чёрный
-      }
-    }
-
-    if (check_type == 0 || check_type == 3) {
-      uint32_t getColor;
-      if (Y < HEIGHT) {
-        getColor = getPixColorXY(X, Y - 1);
-        if (getColor != color && getColor != 0x000000) {
-          flag = false;         // если не СВОЙ цвет и не чёрный
-        }
       }
     }
   }
@@ -327,33 +240,19 @@ boolean checkArea(int8_t check_type) {
 
 // функция, которая удаляет текущую фигуру (красит её чёрным)
 // а затем перерисовывает её в новом положении
-void redrawFigure(int8_t clr_ang, int8_t clr_pos, int8_t clr_height) {
-  drawFigure(fig, clr_ang, clr_pos, clr_height, 0x000000);            // стереть фигуру
-  drawFigure(fig, ang, pos, height, color);                           // отрисовать
+void st_redrawFigure(int8_t clr_pos, int8_t clr_height) {
+  st_drawFigure(clr_pos, clr_height, 0x000000);            // стереть фигуру
+  st_drawFigure(pos, height, color);                           // отрисовать
   FastLED.show();
 }
 
 // функция, отрисовывающая фигуру заданным цветом и под нужным углом
-void drawFigure(byte figure, byte angle, byte x, byte y, uint32_t color) {
+void st_drawFigure( byte x, byte y, uint32_t color) {
   drawPixelXY(x, y, color);         // рисуем точку начала координат фигуры
-  int8_t X, Y;                      // вспомогательные
-  for (byte i = 0; i < 3; i++) {    // рисуем 4 точки фигуры
-    // что происходит: рисуем фигуру относительно текущей координаты падающей точки
-    // просто прибавляем "смещение" из массива координат фигур
-    // для этого идём в прогмем (функция pgm_read_byte)
-    // обращаемся к массиву по адресу &figures
-    // преобразовываем число в int8_t (так как progmem работает только с "unsigned"
-    // angle * 3 + i - обращаемся к координатам согласно текущему углу поворота фигуры
-
-    X = x + (int8_t)pgm_read_byte(&figures[figure][angle * 3 + i][0]);
-    Y = y + (int8_t)pgm_read_byte(&figures[figure][angle * 3 + i][1]);
-    if (Y > HEIGHT - 1) continue;   // если выходим за пределы поля, пропустить отрисовку
-    drawPixelXY(X, Y, color);
-  }
 }
 
-#elif (USE_TETRIS == 0)
-void tetrisRoutine() {
+#elif (USE_SIMPLE_TETRIS == 0)
+void st_tetrisRoutine() {
   return;
 }
 #endif

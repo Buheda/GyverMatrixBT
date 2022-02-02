@@ -16,11 +16,11 @@
 // ************************ МАТРИЦА *************************
 // если прошивка не лезет в Arduino NANO - отключай режимы! Строка 60 и ниже
 
-#define BRIGHTNESS 150        // стандартная маскимальная яркость (0-255)
+#define BRIGHTNESS 20        // стандартная маскимальная яркость (0-255)
 #define CURRENT_LIMIT 2000    // лимит по току в миллиамперах, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
 
-#define WIDTH 16              // ширина матрицы
-#define HEIGHT 16             // высота матрицы
+#define WIDTH 8              // ширина матрицы
+#define HEIGHT 8             // высота матрицы
 #define SEGMENTS 1            // диодов в одном "пикселе" (для создания матрицы из кусков ленты)
 
 #define COLOR_ORDER GRB       // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
@@ -35,15 +35,16 @@
 //                            0 - AVR (Arduino NANO/MEGA/UNO)
 //                            1 - ESP8266 (NodeMCU, Wemos D1)
 //                            2 - STM32 (Blue Pill)
+#define analogKeyBoard 1
 
 // ******************** ЭФФЕКТЫ И РЕЖИМЫ ********************
 #define D_TEXT_SPEED 100      // скорость бегущего текста по умолчанию (мс)
 #define D_EFFECT_SPEED 80     // скорость эффектов по умолчанию (мс)
-#define D_GAME_SPEED 250      // скорость игр по умолчанию (мс)
+#define D_GAME_SPEED 1000      // скорость игр по умолчанию (мс)
 #define D_GIF_SPEED 80        // скорость гифок (мс)
-#define DEMO_GAME_SPEED 60    // скорость игр в демо режиме (мс)
+#define DEMO_GAME_SPEED 250    // скорость игр в демо режиме (мс)
 
-boolean AUTOPLAY = 1;         // 0 выкл / 1 вкл автоматическую смену режимов (откл. можно со смартфона)
+boolean AUTOPLAY = 0;         // 0 выкл / 1 вкл автоматическую смену режимов (откл. можно со смартфона)
 int AUTOPLAY_PERIOD = 10;     // время между авто сменой режимов (секунды)
 #define IDLE_TIME 10          // время бездействия кнопок или Bluetooth (в секундах) после которого запускается автосмена режимов и демо в играх
 
@@ -59,14 +60,16 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 // Это нужно сделать вручную во вкладке custom, удалив ненужные функции
 
 #define USE_BUTTONS 1         // использовать физические кнопки управления играми (0 нет, 1 да)
-#define BT_MODE 1             // использовать блютус (0 нет, 1 да)
+#define BT_MODE 0             // использовать блютус (0 нет, 1 да)
 #define USE_NOISE_EFFECTS 1   // крутые полноэкранные эффекты (0 нет, 1 да) СИЛЬНО ЖРУТ ПАМЯТЬ!!!11
 #define USE_FONTS 1           // использовать буквы (бегущая строка) (0 нет, 1 да)
 #define USE_CLOCK 0           // использовать часы (0 нет, 1 да)
 
 // игры
-#define USE_SNAKE 0           // игра змейка (0 нет, 1 да)
-#define USE_TETRIS 0          // игра тетрис (0 нет, 1 да)
+#define USE_SNAKE 1           // игра змейка (0 нет, 1 да)
+#define USE_TETRIS 1          // игра тетрис (0 нет, 1 да)
+#define USE_SIMPLE_TETRIS 1   // игра тетрис пиксельная, для ребенка
+#define USE_WALKING_PIXEL 1   // игра тетрис пиксельная, для ребенка
 #define USE_MAZE 0            // игра лабиринт (0 нет, 1 да)
 #define USE_RUNNER 0          // игра бегалка-прыгалка (0 нет, 1 да)
 #define USE_FLAPPY 0          // игра flappy bird
@@ -75,12 +78,19 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 // ****************** ПИНЫ ПОДКЛЮЧЕНИЯ *******************
 // Arduino (Nano, Mega)
 #if (MCU_TYPE == 0)
+#if analogKeyBoard == 1
+#define BUTT_ADM_SET 3
+// pins
+#define KEY_PIN A0
+#define LED_PIN 6
+#elif
 #define LED_PIN 6           // пин ленты
 #define BUTT_UP 3           // кнопка вверх
 #define BUTT_DOWN 5         // кнопка вниз
 #define BUTT_LEFT 2         // кнопка влево
 #define BUTT_RIGHT 4        // кнопка вправо
 #define BUTT_SET 7          // кнопка выбор/игра
+#endif
 
 // пины подписаны согласно pinout платы, а не надписям на пинах!
 // esp8266 - плату выбирал Wemos D1 R1
@@ -106,7 +116,7 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define DEBUG 0
 #define NUM_LEDS WIDTH * HEIGHT * SEGMENTS
 
-#define RUNNING_STRING 0
+#define RUNNING_STRING 1
 #define CLOCK_MODE 1
 #define GAME_MODE 2
 #define MADNESS_NOISE 3
@@ -128,6 +138,8 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define RAINBOWDIAGONAL_ROUTINE 19
 #define FIRE_ROUTINE 20
 #define IMAGE_MODE 21
+#define SIMPLE_TETRIS 22 
+#define WALKING_PIXEL 23
 
 #if (MCU_TYPE == 1)
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
@@ -136,6 +148,11 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #endif
 
 #include "FastLED.h"
+
+#if FASTLED_VERSION < 3001000
+#error "Requires FastLED 3.1 or later; check github for latest code."
+#endif
+
 CRGB leds[NUM_LEDS];
 String runningText = "";
 
@@ -145,15 +162,15 @@ int globalBrightness = BRIGHTNESS;
 byte globalSpeed = 200;
 uint32_t globalColor = 0x00ff00;   // цвет при запуске зелёный
 byte breathBrightness;
-boolean loadingFlag = true;
+boolean loadingFlag = false;
 byte frameNum;
 int gameSpeed = DEMO_GAME_SPEED;
 boolean gameDemo = true;
-boolean idleState = true;  // флаг холостого режима работы
+boolean idleState = false;  // флаг холостого режима работы
 boolean BTcontrol = false;  // флаг контроля с блютус. Если false - управление с кнопок
-int8_t thisMode = 0;
+int8_t thisMode = 24;
 boolean controlFlag = false;
-boolean gamemodeFlag = false;
+boolean gamemodeFlag = true;
 boolean mazeMode = false;
 int effects_speed = D_EFFECT_SPEED;
 int8_t hrs = 10, mins = 25, secs;
@@ -186,7 +203,7 @@ RTC_DS3231 rtc;
 #endif
 
 void setup() {
-#if (BT_MODE == 1)
+#if (BT_MODE == 1 || DEBUG)
   Serial.begin(9600);
 #endif
 
@@ -212,9 +229,13 @@ void setup() {
   FastLED.clear();
   FastLED.show();
   randomSeed(analogRead(0) + analogRead(1));    // пинаем генератор случайных чисел
+
+  setupButtons();
 }
 
 void loop() {
+  analogKeysTick();
   customRoutine();
   bluetoothRoutine();
+  delay(10);
 }

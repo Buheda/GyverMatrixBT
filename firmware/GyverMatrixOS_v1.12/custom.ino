@@ -62,9 +62,12 @@
 //  break;
 
 // не забудьте указать количество режимов для корректного переключения с последнего на первый
-#define MODES_AMOUNT 28   // количество кастомных режимов (которые переключаются сами или кнопкой)
+#define MODES_AMOUNT 25   // количество кастомных режимов (которые переключаются сами или кнопкой)
 
 void customModes() {
+  /*  Serial.print(F("customModes: "));
+    Serial.println(thisMode);*/
+
   switch (thisMode) {
 
     case 0: fillString("КРАСНЫЙ", CRGB::Red);
@@ -113,16 +116,20 @@ void customModes() {
       break;
     case 22: tetrisRoutine();
       break;
-    case 23: mazeRoutine();
+    case 23: st_tetrisRoutine();
       break;
-    case 24: runnerRoutine();
+    case 24: walkingPixelRoutine();
       break;
-    case 25: flappyRoutine();
-      break;
-    case 26: arkanoidRoutine();
-      break;
-    case 27: clockRoutine();
-      break;
+      /* case 23: mazeRoutine();
+         break;
+        case 24: runnerRoutine();
+         break;
+        case 25: flappyRoutine();
+         break;
+        case 26: arkanoidRoutine();
+         break;
+        case 27: clockRoutine();
+         break;*/
 
 
   }
@@ -236,6 +243,7 @@ void modeFader() {
 
 boolean loadFlag2;
 void customRoutine() {
+
   if (!BTcontrol) {
     if (!gamemodeFlag) {
       if (effectTimer.isReady()) {
@@ -261,9 +269,11 @@ void customRoutine() {
         FastLED.show();
       }
     } else {
+
       customModes();
     }
-    btnsModeChange();
+    if (!isLockedMode())
+      btnsModeChange();
 #if (SMOOTH_CHANGE == 1)
     modeFader();
 #endif
@@ -288,7 +298,9 @@ void customRoutine() {
       }
     }
   } else {
-    if (idleTimer.isReady()) {      // таймер холостого режима
+    if (idleTimer.isReady() && gameDemo) {      // таймер холостого режима
+      Serial.print(F("idleTimer.isReady"));
+
       idleState = true;
       autoplayTimer = millis();
       gameDemo = true;
@@ -325,8 +337,12 @@ void timeSet(boolean type, boolean dir) {    // type: 0-часы, 1-минуты
 }
 
 void btnsModeChange() {
+
 #if (USE_BUTTONS == 1)
-  if (bt_set.clicked()) {
+  if (checkIsSETBtn()) {
+#if DEBUG
+    Serial.println(F("bt_set.isClick"));
+#endif
     if (gamemodeFlag) gameDemo = !gameDemo;
     if (gameDemo) {
       gameSpeed = DEMO_GAME_SPEED;
@@ -338,7 +354,10 @@ void btnsModeChange() {
       AUTOPLAY = false;
     }
   }
-  if (bt_set.holded()) {
+  if (checkIsSETBtn(true)) {
+#if DEBUG
+    Serial.println(F("bt_set.isHold"));
+#endif
     if (modeCode == 2)
       mazeMode = !mazeMode;
     if (modeCode == 1) {    // вход в настройку часов
@@ -354,7 +373,10 @@ void btnsModeChange() {
   // timeSet type: 0-часы, 1-минуты, dir: 0-уменьшить, 1-увеличить
 
   if (gameDemo) {
-    if (bt_right.clicked()) {
+    if (checkIsRightBtns()) {
+#if DEBUG
+      Serial.println(F("bt_right.isClick"));
+#endif
       if (!clockSet) {
         autoplayTimer = millis();
         nextMode();
@@ -363,7 +385,10 @@ void btnsModeChange() {
       }
     }
 
-    if (bt_left.clicked()) {
+    if (checkIsLeftBtns()) {
+#if DEBUG
+      Serial.println(F("bt_left.isClick"));
+#endif
       if (!clockSet) {
         autoplayTimer = millis();
         prevMode();
@@ -372,7 +397,10 @@ void btnsModeChange() {
       }
     }
 
-    if (bt_up.clicked()) {
+    if (checkIsUpBtns()) {
+#if DEBUG
+      Serial.println(F("bt_up.isClick"));
+#endif
       if (!clockSet) {
         AUTOPLAY = true;
         autoplayTimer = millis();
@@ -380,7 +408,10 @@ void btnsModeChange() {
         timeSet(0, 1);
       }
     }
-    if (bt_down.clicked()) {
+    if (checkIsDownBtns()) {
+#if DEBUG
+      Serial.println(F("bt_down.isClick"));
+#endif
       if (!clockSet) {
         AUTOPLAY = false;
       } else {
@@ -388,7 +419,10 @@ void btnsModeChange() {
       }
     }
 
-    if (bt_right.holding())
+    if (checkIsRightBtns(true)) {
+#if DEBUG
+      Serial.println(F("bt_right.isHold"));
+#endif
       if (changeTimer.isReady()) {
         if (!clockSet) {
           effects_speed -= 2;
@@ -398,7 +432,11 @@ void btnsModeChange() {
           timeSet(1, 1);
         }
       }
-    if (bt_left.holding())
+    }
+    if (checkIsLeftBtns(true)) {
+#if DEBUG
+      Serial.println(F("bt_left.isHold"));
+#endif
       if (changeTimer.isReady()) {
         if (!clockSet) {
           effects_speed += 2;
@@ -408,7 +446,11 @@ void btnsModeChange() {
           timeSet(1, 0);
         }
       }
-    if (bt_up.holding())
+    }
+    if (checkIsUpBtns(true)) {
+#if DEBUG
+      Serial.println(F("bt_up.isHold"));
+#endif
       if (changeTimer.isReady()) {
         if (!clockSet) {
           globalBrightness += 2;
@@ -419,7 +461,11 @@ void btnsModeChange() {
           timeSet(0, 1);
         }
       }
-    if (bt_down.holding())
+    }
+    if (checkIsDownBtns(true)) {
+#if DEBUG
+      Serial.println(F("bt_down.isHold"));
+#endif
       if (changeTimer.isReady()) {
         if (!clockSet) {
           globalBrightness -= 2;
@@ -430,6 +476,7 @@ void btnsModeChange() {
           timeSet(0, 0);
         }
       }
+    }
   }
 #endif
 }

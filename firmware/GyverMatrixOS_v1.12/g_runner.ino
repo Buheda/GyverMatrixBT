@@ -25,7 +25,7 @@ void runnerRoutine() {
   if (loadingFlag) {
     FastLED.clear();
     loadingFlag = false;
-    gamemodeFlag = true;
+    //gamemodeFlag = true;
     modeCode = 2;
   }
 
